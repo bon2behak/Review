@@ -39,7 +39,9 @@ import {
   createReviewInFirestore,
   updateReviewInFirestore,
   createNotificationInFirestore,
-  markNotificationReadInFirestore
+  markNotificationReadInFirestore,
+  fetchAllReviewsFromFirestore,
+  testFirestoreConnection
 } from './firebase';
 
 export default function App() {
@@ -52,37 +54,54 @@ export default function App() {
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
   const [rewards, setRewards] = useState<RewardItem[]>(INITIAL_REWARDS);
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
-  const [firebaseStatus, setFirebaseStatus] = useState<'connected' | 'syncing'>('connected');
+  const [firebaseStatus, setFirebaseStatus] = useState<'connected' | 'syncing' | 'error'>('connected');
+  const [lastSyncTime, setLastSyncTime] = useState<string>('Vừa xong');
 
   // Firebase Realtime Subscriptions
   useEffect(() => {
     // Seed initial demo data to Firestore if collection is empty
     seedInitialDataIfEmpty();
+    testFirestoreConnection();
 
     // Subscribe to real-time changes across all connected devices
-    const unsubReviews = subscribeToReviews(cloudReviews => {
-      if (cloudReviews.length > 0) {
-        setReviews(cloudReviews);
+    const unsubReviews = subscribeToReviews(
+      cloudReviews => {
+        if (cloudReviews.length > 0) {
+          setReviews(cloudReviews);
+          setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        }
+      },
+      err => {
+        console.warn('Realtime reviews listener warning:', err);
       }
-    });
+    );
 
-    const unsubNotifs = subscribeToNotifications(cloudNotifs => {
-      if (cloudNotifs.length > 0) {
-        setNotifications(cloudNotifs);
+    const unsubNotifs = subscribeToNotifications(
+      cloudNotifs => {
+        if (cloudNotifs.length > 0) {
+          setNotifications(cloudNotifs);
+        }
+      },
+      err => {
+        console.warn('Realtime notifications listener warning:', err);
       }
-    });
+    );
 
-    const unsubTasks = subscribeToTasks(cloudTasks => {
-      if (cloudTasks.length > 0) {
-        setTasks(cloudTasks);
+    const unsubTasks = subscribeToTasks(
+      cloudTasks => {
+        if (cloudTasks.length > 0) {
+          setTasks(cloudTasks);
+        }
       }
-    });
+    );
 
-    const unsubRewards = subscribeToRewards(cloudRewards => {
-      if (cloudRewards.length > 0) {
-        setRewards(cloudRewards);
+    const unsubRewards = subscribeToRewards(
+      cloudRewards => {
+        if (cloudRewards.length > 0) {
+          setRewards(cloudRewards);
+        }
       }
-    });
+    );
 
     return () => {
       unsubReviews();
@@ -91,6 +110,34 @@ export default function App() {
       unsubRewards();
     };
   }, []);
+
+  // Sync open readingReview modal when reviews change from cloud in real time
+  useEffect(() => {
+    if (readingReview) {
+      const fresh = reviews.find(r => r.id === readingReview.id);
+      if (fresh) {
+        setReadingReview(fresh);
+      }
+    }
+  }, [reviews]);
+
+  // Manual trigger to pull latest data from Firestore
+  const handleManualSync = async () => {
+    try {
+      setFirebaseStatus('syncing');
+      const cloudReviews = await fetchAllReviewsFromFirestore();
+      if (cloudReviews.length > 0) {
+        setReviews(cloudReviews);
+      }
+      setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setFirebaseStatus('connected');
+      showToast('🔄 Đã làm mới và đồng bộ dữ liệu thời gian thực từ Cloud Firebase!');
+    } catch (err: any) {
+      setFirebaseStatus('error');
+      showToast('⚠️ Không thể tải dữ liệu mới từ Cloud: ' + (err?.message || 'Lỗi kết nối'));
+      setTimeout(() => setFirebaseStatus('connected'), 3000);
+    }
+  };
 
   // App-wide font scaling ('normal': 16px, 'large': 18px, 'xlarge': 20px)
   const [appFontSize, setAppFontSize] = useState<'normal' | 'large' | 'xlarge'>('normal');
@@ -299,14 +346,18 @@ export default function App() {
 
     const isPassed = gradeStatus === 'completed';
 
-    const updated = {
+    const updated: ReviewItem = {
       ...gradingReview,
       status: gradeStatus,
-      score: isPassed ? Number(gradeScore) : undefined,
+      score: isPassed ? Number(gradeScore) : 0,
       feedback: gradeFeedback.trim() || (isPassed ? 'Bài viết đạt yêu cầu, tư duy tốt!' : 'Em hãy đọc lại nhận xét và bổ sung chi tiết nhé.'),
       teacherName: currentUser.name,
       urgent: !isPassed
     };
+
+    if (!isPassed) {
+      delete updated.score;
+    }
 
     setReviews(prev => prev.map(r => (r.id === gradingReview.id ? updated : r)));
 
@@ -342,16 +393,21 @@ export default function App() {
 
     setNotifications([studentNotif, parentNotif, ...notifications]);
     const gradedId = gradingReview.id;
+    const studentName = gradingReview.studentName;
     setGradingReview(null);
     setGradeFeedback('');
-    showToast(`✅ Đã đồng bộ điểm & nhận xét lên Cloud! Học sinh & Ba mẹ thấy kết quả ngay.`);
 
     try {
+      setFirebaseStatus('syncing');
       await updateReviewInFirestore(gradedId, updated);
       await createNotificationInFirestore(studentNotif);
       await createNotificationInFirestore(parentNotif);
-    } catch (err) {
-      console.warn('Firebase grade update error:', err);
+      setFirebaseStatus('connected');
+      showToast(`✅ Đã lưu điểm ${isPassed ? gradeScore + '/10' : 'Yêu cầu sửa'} lên Cloud! Học sinh (${studentName}) ở trình duyệt khác sẽ nhận được ngay.`);
+    } catch (err: any) {
+      console.error('Firebase grade update error:', err);
+      setFirebaseStatus('connected');
+      showToast(`⚠️ Lỗi khi lưu lên Firebase: ${err?.message || 'Vui lòng thử lại'}`);
     }
   };
 
@@ -359,9 +415,9 @@ export default function App() {
   const handleParentCheer = async (reviewId: string, reactionText: string, customComment?: string) => {
     const commentToSend = customComment?.trim() || parentCommentInput.trim();
 
-    const updatedFields = {
+    const updatedFields: Partial<ReviewItem> = {
       parentReaction: reactionText,
-      parentComment: commentToSend || undefined
+      parentComment: commentToSend || ''
     };
 
     setReviews(prev =>
@@ -405,15 +461,18 @@ export default function App() {
     }
 
     setParentCommentInput('');
-    showToast(`❤️ Đã gửi lời động viên "${reactionText}" lên Firebase! Con đã nhận được thông báo.`);
 
     try {
+      setFirebaseStatus('syncing');
       await updateReviewInFirestore(reviewId, updatedFields);
       if (cheerNotif) {
         await createNotificationInFirestore(cheerNotif);
       }
+      setFirebaseStatus('connected');
+      showToast(`❤️ Đã gửi lời động viên "${reactionText}" lên Firebase! Con đã nhận được thông báo.`);
     } catch (err) {
       console.warn('Firebase cheer error:', err);
+      setFirebaseStatus('connected');
     }
   };
 
@@ -568,15 +627,23 @@ export default function App() {
             </button>
           </div>
 
-          {/* Firebase Realtime Cloud Sync Status */}
-          <div
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 text-xs font-bold"
-            title="Dữ liệu đồng bộ trực tuyến thời gian thực qua Firebase Firestore giữa Học sinh, Ba mẹ và Giáo viên"
+          {/* Firebase Realtime Cloud Sync Status with Manual Refresh */}
+          <button
+            onClick={handleManualSync}
+            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition cursor-pointer ${
+              firebaseStatus === 'syncing'
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : firebaseStatus === 'error'
+                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+            }`}
+            title={`Dữ liệu đồng bộ trực tuyến thời gian thực qua Firebase Firestore. Cập nhật lần cuối: ${lastSyncTime}. Bấm để làm mới ngay.`}
           >
             <Cloud className={`w-3.5 h-3.5 ${firebaseStatus === 'syncing' ? 'animate-bounce text-blue-600' : 'text-emerald-600'}`} />
-            <span>{firebaseStatus === 'syncing' ? 'Đang đồng bộ...' : 'Firebase Cloud Sync'}</span>
+            <span>{firebaseStatus === 'syncing' ? 'Đang đồng bộ...' : 'Cloud Realtime'}</span>
+            <RefreshCw className={`w-3 h-3 ml-0.5 ${firebaseStatus === 'syncing' ? 'animate-spin text-blue-600' : 'text-emerald-600'}`} />
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-          </div>
+          </button>
 
           {/* Quick Guide */}
           <button

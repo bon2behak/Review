@@ -1,11 +1,11 @@
 {
-  "schemaVersion": "1.0",
-  "collections": [
-    {
-      "name": "reviews",
+  "entities": {
+    "Review": {
+      "title": "Review",
       "description": "Student lesson review submissions, teacher grading, and parent feedback",
-      "type": "collection",
-      "fields": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
         "studentId": { "type": "string" },
         "studentName": { "type": "string" },
         "studentClass": { "type": "string" },
@@ -25,14 +25,17 @@
         "teacherName": { "type": "string" },
         "parentReaction": { "type": "string" },
         "parentComment": { "type": "string" },
-        "createdAt": { "type": "timestamp" }
-      }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "studentId", "studentName", "subject", "title", "myText", "status"]
     },
-    {
-      "name": "notifications",
+    "AppNotification": {
+      "title": "AppNotification",
       "description": "Notifications across student, teacher, and parent roles",
-      "type": "collection",
-      "fields": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
         "targetRole": { "type": "string" },
         "targetUserId": { "type": "string" },
         "title": { "type": "string" },
@@ -41,14 +44,16 @@
         "read": { "type": "boolean" },
         "type": { "type": "string" },
         "relatedReviewId": { "type": "string" },
-        "createdAt": { "type": "timestamp" }
-      }
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "targetRole", "title", "message", "type"]
     },
-    {
-      "name": "tasks",
+    "TaskItem": {
+      "title": "TaskItem",
       "description": "Reading and learning tasks assigned to students",
-      "type": "collection",
-      "fields": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
         "subject": { "type": "string" },
         "title": { "type": "string" },
         "pages": { "type": "string" },
@@ -56,20 +61,41 @@
         "rewardPoints": { "type": "number" },
         "completed": { "type": "boolean" },
         "tag": { "type": "string" }
-      }
+      },
+      "required": ["id", "subject", "title"]
     },
-    {
-      "name": "rewards",
+    "RewardItem": {
+      "title": "RewardItem",
       "description": "Reward items redeemable with study points",
-      "type": "collection",
-      "fields": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
         "name": { "type": "string" },
         "cost": { "type": "number" },
         "icon": { "type": "string" },
         "category": { "type": "string" },
         "description": { "type": "string" },
         "redeemedCount": { "type": "number" }
-      }
+      },
+      "required": ["id", "name", "cost"]
     }
-  ]
+  },
+  "firestore": {
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Educational reviews created by students, graded by teachers, cheered by parents"
+    },
+    "/notifications/{notifId}": {
+      "schema": "AppNotification",
+      "description": "Real-time alerts for reviews, grading, and cheer interactions"
+    },
+    "/tasks/{taskId}": {
+      "schema": "TaskItem",
+      "description": "Assigned study and reading tasks"
+    },
+    "/rewards/{rewardId}": {
+      "schema": "RewardItem",
+      "description": "Redeemable learning rewards"
+    }
+  }
 }
