@@ -1,0 +1,6 @@
+{
+  "name": "Learn & Review",
+  "description": "Student learning dashboard and review platform with streak tracking, book reviews, and reward milestones.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
