@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.0",
+  "collections": [
+    {
+      "name": "reviews",
+      "description": "Student lesson review submissions, teacher grading, and parent feedback",
+      "type": "collection",
+      "fields": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentClass": { "type": "string" },
+        "studentAvatar": { "type": "string" },
+        "subject": { "type": "string" },
+        "title": { "type": "string" },
+        "chapter": { "type": "string" },
+        "feedback": { "type": "string" },
+        "deadline": { "type": "string" },
+        "status": { "type": "string" },
+        "urgent": { "type": "boolean" },
+        "score": { "type": "number" },
+        "date": { "type": "string" },
+        "submittedAt": { "type": "string" },
+        "myText": { "type": "string" },
+        "reflection": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "parentReaction": { "type": "string" },
+        "parentComment": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      }
+    },
+    {
+      "name": "notifications",
+      "description": "Notifications across student, teacher, and parent roles",
+      "type": "collection",
+      "fields": {
+        "targetRole": { "type": "string" },
+        "targetUserId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" },
+        "type": { "type": "string" },
+        "relatedReviewId": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      }
+    },
+    {
+      "name": "tasks",
+      "description": "Reading and learning tasks assigned to students",
+      "type": "collection",
+      "fields": {
+        "subject": { "type": "string" },
+        "title": { "type": "string" },
+        "pages": { "type": "string" },
+        "deadline": { "type": "string" },
+        "rewardPoints": { "type": "number" },
+        "completed": { "type": "boolean" },
+        "tag": { "type": "string" }
+      }
+    },
+    {
+      "name": "rewards",
+      "description": "Reward items redeemable with study points",
+      "type": "collection",
+      "fields": {
+        "name": { "type": "string" },
+        "cost": { "type": "number" },
+        "icon": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "redeemedCount": { "type": "number" }
+      }
+    }
+  ]
+}
