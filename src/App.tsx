@@ -22,7 +22,10 @@ import {
   Maximize2,
   Cloud,
   CloudCheck,
-  RefreshCw
+  RefreshCw,
+  Keyboard,
+  ShieldCheck,
+  AlertCircle
 } from 'lucide-react';
 import { UserRole, UserProfile, ReviewItem, TaskItem, RewardItem, AppNotification } from './types';
 import { PRESET_USERS, INITIAL_REVIEWS, INITIAL_TASKS, INITIAL_REWARDS, INITIAL_NOTIFICATIONS } from './data';
@@ -1938,7 +1941,12 @@ export default function App() {
           <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
-                <h3 className="text-2xl font-black text-slate-900">Viết Bài Review Mới</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-black text-slate-900">Viết Bài Review Mới</h3>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    <Keyboard className="w-3.5 h-3.5" /> Tự gõ bài
+                  </span>
+                </div>
                 <p className="text-sm text-slate-500 mt-0.5">
                   Tác giả: <strong>{currentUser.name}</strong> ({currentUser.class})
                 </p>
@@ -1951,7 +1959,18 @@ export default function App() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateReview} className="mt-5 flex flex-col gap-4">
+            {/* Anti-Paste & Honesty Banner */}
+            <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-emerald-900">
+                <p className="font-bold">🛡️ Chế độ luyện gõ & tự học trung thực:</p>
+                <p className="text-emerald-700 mt-0.5 leading-relaxed">
+                  Học sinh cần <strong>tự dùng bàn phím gõ từng chữ</strong> theo lời văn và cảm nhận của mình. Tính năng sao chép &amp; dán (Copy - Paste) đã được khóa để rèn luyện kỹ năng viết và ghi nhớ bài học.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateReview} className="mt-4 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Môn học</label>
@@ -1994,36 +2013,76 @@ export default function App() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Nội dung tóm tắt & Lời văn của em (Review chi tiết)
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <span>Nội dung tóm tắt &amp; Lời văn của em (Review chi tiết)</span>
+                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                      Khóa Paste 🚫
+                    </span>
+                  </label>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    ✍️ Đã gõ: {newText.trim() ? newText.trim().split(/\s+/).length : 0} từ ({newText.length} ký tự)
+                  </span>
+                </div>
                 <textarea
-                  rows={5}
-                  placeholder="Hãy kể lại những ý chính quan trọng bằng ngôn ngữ của chính em, có thể viết dài nhiều đoạn..."
+                  rows={6}
+                  placeholder="Em hãy tự gõ bàn phím kể lại những ý chính quan trọng bằng ngôn ngữ của chính em, có thể viết dài nhiều đoạn..."
                   value={newText}
                   onChange={e => setNewText(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 leading-relaxed"
+                  onPaste={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Không thể dán (Paste): Em hãy tự gõ từng chữ từ bàn phím bằng chính suy nghĩ của mình nhé!');
+                  }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Không thể kéo thả văn bản: Em hãy tự gõ chữ vào ô bài làm nhé!');
+                  }}
+                  onContextMenu={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Menu chuột phải đã tắt: Em hãy sử dụng bàn phím để tự gõ bài văn nhé!');
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 leading-relaxed font-normal select-text"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Cảm nghĩ hoặc bài học tâm đắc nhất của em
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <span>Cảm nghĩ hoặc bài học tâm đắc nhất của em</span>
+                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                      Khóa Paste 🚫
+                    </span>
+                  </label>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    {newReflection.length} ký tự
+                  </span>
+                </div>
                 <textarea
                   rows={2}
                   placeholder="Em rút ra được điều gì áp dụng vào cuộc sống hay học tập?"
                   value={newReflection}
                   onChange={e => setNewReflection(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500"
+                  onPaste={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Em hãy tự gõ cảm nhận của mình từ bàn phím nhé!');
+                  }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Em hãy tự gõ cảm nhận của mình từ bàn phím nhé!');
+                  }}
+                  onContextMenu={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Vui lòng tự đánh máy nội dung bài học!');
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 select-text"
                 />
               </div>
 
               <div className="bg-blue-50 p-3.5 rounded-2xl border border-blue-100 text-xs text-blue-900 flex items-start gap-2.5">
                 <span className="text-base">🔔</span>
                 <p>
-                  Khi bấm <strong>"Nộp bài & Tích điểm"</strong>, bài viết sẽ được gửi đồng thời tới <strong>Giáo viên bộ môn</strong> để chấm điểm và cập nhật lên <strong>Sổ liên lạc của Ba Mẹ</strong>.
+                  Khi bấm <strong>"Nộp bài &amp; Tích điểm"</strong>, bài viết tự gõ của em sẽ được lưu lên đám mây <strong>Firebase</strong>, gửi đồng thời tới <strong>Giáo viên</strong> để chấm điểm và cập nhật lên <strong>Sổ liên lạc của Ba Mẹ</strong>.
                 </p>
               </div>
 
@@ -2037,9 +2096,9 @@ export default function App() {
                 </button>
                 <button
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition cursor-pointer"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition cursor-pointer flex items-center gap-1.5"
                 >
-                  Nộp bài & Tích 25 điểm ⭐
+                  <span>Nộp bài &amp; Tích 25 điểm ⭐</span>
                 </button>
               </div>
             </form>
@@ -2056,7 +2115,7 @@ export default function App() {
           <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
-                <span className="text-xs font-bold text-orange-600 uppercase">Chỉnh sửa & Hoàn thiện bài</span>
+                <span className="text-xs font-bold text-orange-600 uppercase">Chỉnh sửa &amp; Hoàn thiện bài</span>
                 <h3 className="text-xl font-black text-slate-900 mt-0.5">{editingReview.title}</h3>
               </div>
               <button
@@ -2072,14 +2131,33 @@ export default function App() {
               <p className="text-sm text-orange-800 mt-1 italic">&ldquo;{editingReview.feedback}&rdquo;</p>
             </div>
 
+            {/* Anti-Paste Notice */}
+            <div className="mt-3 px-3.5 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2">
+              <Keyboard className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>Chế độ tự gõ bài bổ sung (Đã khóa chức năng Dán văn bản).</span>
+            </div>
+
             <form onSubmit={handleUpdateReview} className="mt-4 flex flex-col gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nội dung bài viết bổ sung</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-slate-700">Nội dung bài viết bổ sung</label>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    ✍️ {editingReview.myText ? editingReview.myText.split(/\s+/).length : 0} từ
+                  </span>
+                </div>
                 <textarea
                   rows={6}
                   value={editingReview.myText}
                   onChange={e => setEditingReview({ ...editingReview, myText: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 leading-relaxed font-normal"
+                  onPaste={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Không thể dán (Paste): Em hãy tự gõ phần sửa bài bằng bàn phím nhé!');
+                  }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Em hãy tự gõ chữ vào bài sửa nhé!');
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 leading-relaxed font-normal select-text"
                   required
                 />
               </div>
@@ -2090,7 +2168,15 @@ export default function App() {
                   rows={3}
                   value={editingReview.reflection || ''}
                   onChange={e => setEditingReview({ ...editingReview, reflection: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500"
+                  onPaste={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Em hãy tự gõ cảm nhận của mình nhé!');
+                  }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    showToast('⚠️ Em hãy tự gõ cảm nhận của mình nhé!');
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 select-text"
                 />
               </div>
 
