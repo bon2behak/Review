@@ -1,10 +1,21 @@
 import { initializeApp } from 'firebase/app';
 import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  type User as FirebaseUser
+} from 'firebase/auth';
+
+export { onAuthStateChanged, type FirebaseUser };
+import {
   getFirestore,
   collection,
   doc,
   setDoc,
   updateDoc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -13,11 +24,15 @@ import {
   type Unsubscribe
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { ReviewItem, AppNotification, TaskItem, RewardItem } from './types';
+import { ReviewItem, AppNotification, TaskItem, RewardItem, UserProfile } from './types';
 import { INITIAL_REVIEWS, INITIAL_NOTIFICATIONS, INITIAL_TASKS, INITIAL_REWARDS } from './data';
 
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
+
+// Initialize Auth
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Firestore with configured custom database ID or default
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
@@ -27,6 +42,60 @@ export const reviewsCollection = collection(db, 'reviews');
 export const notificationsCollection = collection(db, 'notifications');
 export const tasksCollection = collection(db, 'tasks');
 export const rewardsCollection = collection(db, 'rewards');
+export const usersCollection = collection(db, 'users');
+
+/**
+ * Sign in with Google Popup
+ */
+export async function signInWithGoogle(): Promise<FirebaseUser | null> {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.warn('Google sign-in popup error (or iframe constraint):', error);
+    throw error;
+  }
+}
+
+/**
+ * Sign out
+ */
+export async function logOutFromFirebase(): Promise<void> {
+  try {
+    await firebaseSignOut(auth);
+  } catch (error) {
+    console.warn('Sign out error:', error);
+  }
+}
+
+/**
+ * Save or update user profile in Firestore
+ */
+export async function saveUserProfileToFirestore(profile: UserProfile): Promise<void> {
+  try {
+    await setDoc(doc(db, 'users', profile.id), {
+      ...profile,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Error saving user profile to Firestore:', error);
+  }
+}
+
+/**
+ * Get user profile from Firestore
+ */
+export async function getUserProfileFromFirestore(userId: string): Promise<UserProfile | null> {
+  try {
+    const snap = await getDoc(doc(db, 'users', userId));
+    if (snap.exists()) {
+      return snap.data() as UserProfile;
+    }
+  } catch (error) {
+    console.warn('Error fetching user profile from Firestore:', error);
+  }
+  return null;
+}
 
 /**
  * Initialize Firestore data if empty with preset educational reviews & demo records

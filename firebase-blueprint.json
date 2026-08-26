@@ -70,6 +70,22 @@
         "description": { "type": "string" },
         "redeemedCount": { "type": "number" }
       }
+    },
+    {
+      "name": "users",
+      "description": "User profiles for persistent student, teacher, and parent logins",
+      "type": "collection",
+      "fields": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "class": { "type": "string" },
+        "avatar": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "studentId": { "type": "string" },
+        "updatedAt": { "type": "timestamp" }
+      }
     }
   ]
 }

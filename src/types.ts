@@ -17,6 +17,7 @@ export interface ReviewItem {
   studentName: string;
   studentClass: string;
   studentAvatar: string;
+  studentEmail?: string;
   subject: string;
   title: string;
   chapter: string;

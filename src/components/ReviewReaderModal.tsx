@@ -333,20 +333,34 @@ export const ReviewReaderModal: React.FC<ReviewReaderModalProps> = ({
               &ldquo;{review.feedback || 'Bài viết đang chờ thầy cô xem xét và phản hồi.'}&rdquo;
             </p>
 
-            {/* Quick Action for Teacher */}
-            {currentUser.role === 'teacher' && onGrade && (
-              <div className="mt-4 pt-3 border-t border-purple-200/60 flex items-center justify-end">
+            {/* Action Buttons in Reader */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {currentUser.role === 'teacher' && onGrade && (
                 <button
                   onClick={() => {
                     onClose();
                     onGrade(review);
                   }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4" /> Chấm điểm & Viết lại nhận xét
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{review.status === 'completed' ? '📝 Chấm lại bài (Phúc khảo)' : 'Chấm điểm bài này'}</span>
                 </button>
-              </div>
-            )}
+              )}
+
+              {currentUser.role === 'student' && onEdit && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onEdit(review);
+                  }}
+                  className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Sửa &amp; Nộp lại bài</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* PARENT INTERACTION & CHEERING SECTION */}
@@ -435,7 +449,7 @@ export const ReviewReaderModal: React.FC<ReviewReaderModalProps> = ({
         {/* MODAL FOOTER */}
         <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            {currentUser.role === 'student' && review.studentId === currentUser.id && review.status === 'needs_revision' && onEdit && (
+            {currentUser.role === 'student' && onEdit && (
               <button
                 onClick={() => {
                   onClose();
@@ -443,7 +457,19 @@ export const ReviewReaderModal: React.FC<ReviewReaderModalProps> = ({
                 }}
                 className="bg-orange-600 hover:bg-orange-700 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer"
               >
-                <Edit3 className="w-4 h-4" /> Sửa & Nộp lại bài viết (+15 ⭐)
+                <Edit3 className="w-4 h-4" /> Sửa &amp; Nộp lại bài viết (+15 ⭐)
+              </button>
+            )}
+
+            {currentUser.role === 'teacher' && onGrade && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onGrade(review);
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" /> {review.status === 'completed' ? 'Chấm lại bài (Phúc khảo)' : 'Chấm điểm & Nhận xét'}
               </button>
             )}
           </div>

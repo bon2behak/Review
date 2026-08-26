@@ -30,7 +30,13 @@ import {
 import { UserRole, UserProfile, ReviewItem, TaskItem, RewardItem, AppNotification } from './types';
 import { PRESET_USERS, INITIAL_REVIEWS, INITIAL_TASKS, INITIAL_REWARDS, INITIAL_NOTIFICATIONS } from './data';
 import { ReviewReaderModal } from './components/ReviewReaderModal';
+import { AuthModal } from './components/AuthModal';
 import {
+  auth,
+  onAuthStateChanged,
+  type FirebaseUser,
+  logOutFromFirebase,
+  getUserProfileFromFirestore,
   seedInitialDataIfEmpty,
   subscribeToReviews,
   subscribeToNotifications,
@@ -43,8 +49,22 @@ import {
 } from './firebase';
 
 export default function App() {
-  // Core State
-  const [currentUser, setCurrentUser] = useState<UserProfile>(PRESET_USERS[0]);
+  // Core State with Persistent Local Storage Auto-Login
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    try {
+      const saved = localStorage.getItem('learn_review_active_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.id && parsed.name) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load saved user session:', e);
+    }
+    return PRESET_USERS[0];
+  });
+
   const [currentTab, setCurrentTab] = useState<'dashboard' | 'reviews' | 'tasks' | 'rewards' | 'grading' | 'parent_feed'>('dashboard');
   const [points, setPoints] = useState<number>(245);
   const [streakDays, setStreakDays] = useState<number>(7);
@@ -53,6 +73,46 @@ export default function App() {
   const [rewards, setRewards] = useState<RewardItem[]>(INITIAL_REWARDS);
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
   const [firebaseStatus, setFirebaseStatus] = useState<'connected' | 'syncing'>('connected');
+
+  // Modals and UI States
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [readingReview, setReadingReview] = useState<ReviewItem | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [showRoleSwitcher, setShowRoleSwitcher] = useState<boolean>(false);
+  const [showLoginGuide, setShowLoginGuide] = useState<boolean>(false);
+  const [showNotifDropdown, setShowNotifDropdown] = useState<boolean>(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
+  const [gradingReview, setGradingReview] = useState<ReviewItem | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [reviewFilter, setReviewFilter] = useState<string>('all');
+
+  // Save active user profile automatically on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem('learn_review_active_user', JSON.stringify(currentUser));
+    } catch (e) {
+      console.warn('Could not save user session:', e);
+    }
+  }, [currentUser]);
+
+  // Firebase Auth State Listener
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
+      if (fbUser && fbUser.email) {
+        try {
+          const profile = await getUserProfileFromFirestore(`usr_${fbUser.uid}`);
+          if (profile) {
+            setCurrentUser(profile);
+          }
+        } catch (e) {
+          console.warn('Error fetching user profile from Firestore:', e);
+        }
+      }
+    });
+    return () => unsubAuth();
+  }, []);
 
   // Firebase Realtime Subscriptions
   useEffect(() => {
@@ -95,20 +155,7 @@ export default function App() {
   // App-wide font scaling ('normal': 16px, 'large': 18px, 'xlarge': 20px)
   const [appFontSize, setAppFontSize] = useState<'normal' | 'large' | 'xlarge'>('normal');
 
-  // Modals and UI States
-  const [readingReview, setReadingReview] = useState<ReviewItem | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const [showRoleSwitcher, setShowRoleSwitcher] = useState<boolean>(false);
-  const [showLoginGuide, setShowLoginGuide] = useState<boolean>(false);
-  const [showNotifDropdown, setShowNotifDropdown] = useState<boolean>(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
-  const [gradingReview, setGradingReview] = useState<ReviewItem | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [reviewFilter, setReviewFilter] = useState<string>('all');
-
-  // Custom User Login Form
+  // Custom User Login Form (Fallback inside switcher)
   const [customLoginName, setCustomLoginName] = useState<string>('');
   const [customLoginRole, setCustomLoginRole] = useState<UserRole>('student');
   const [customLoginClass, setCustomLoginClass] = useState<string>('Lớp 7A1');
@@ -135,7 +182,7 @@ export default function App() {
     }, 4000);
   };
 
-  // Switch Role
+  // Switch Role / User
   const handleSwitchUser = (user: UserProfile) => {
     setCurrentUser(user);
     setShowRoleSwitcher(false);
@@ -167,7 +214,7 @@ export default function App() {
     setCurrentUser(newUser);
     setShowRoleSwitcher(false);
     setCustomLoginName('');
-    showToast(`✅ Xin chào ${newUser.name}! Bạn đang sử dụng vai trò ${newUser.role === 'student' ? 'Học sinh' : newUser.role === 'teacher' ? 'Giáo viên' : 'Phụ huynh'}.`);
+    showToast(`✅ Xin chào ${newUser.name}! Hệ thống đã lưu tên bạn để sử dụng.`);
   };
 
   // Create Review Handler (Triggers Student post + Teacher & Parent notifications & Syncs with Firestore)
@@ -182,6 +229,7 @@ export default function App() {
       studentName: currentUser.name,
       studentClass: currentUser.class,
       studentAvatar: currentUser.avatar,
+      studentEmail: currentUser.email,
       subject: newSubject,
       title: newTitle.trim(),
       chapter: newChapter.trim() || 'Tài liệu tự học',
@@ -249,7 +297,7 @@ export default function App() {
     }
   };
 
-  // Update/Revise Review Handler
+  // Update/Revise Review Handler (Student edits and re-submits anytime)
   const handleUpdateReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingReview) return;
@@ -257,8 +305,9 @@ export default function App() {
     const updatedRev: ReviewItem = {
       ...editingReview,
       status: 'reviewing',
-      feedback: 'Học sinh đã nộp lại bài chỉnh sửa. Đang chờ giáo viên đánh giá lại.',
-      urgent: false
+      feedback: 'Học sinh đã nộp lại bài chỉnh sửa mới nhất. Đang chờ giáo viên đánh giá/chấm lại.',
+      urgent: false,
+      submittedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (Nộp lại)'
     };
 
     setReviews(prev =>
@@ -269,41 +318,56 @@ export default function App() {
     const reviseNotif: AppNotification = {
       id: `notif-${Date.now()}-revised`,
       targetRole: 'teacher',
-      title: `Bài sửa lại từ ${currentUser.name}`,
-      message: `Học sinh đã chỉnh sửa bài review môn ${editingReview.subject}: "${editingReview.title}".`,
+      title: `Bài nộp lại từ ${currentUser.name} (${currentUser.class})`,
+      message: `Học sinh đã hoàn thiện và nộp lại bài review môn ${editingReview.subject}: "${editingReview.title}".`,
       timestamp: 'Vừa xong',
       read: false,
       type: 'review_submitted',
       relatedReviewId: editingReview.id
     };
-    setNotifications([reviseNotif, ...notifications]);
+
+    // Notify parent
+    const parentReviseNotif: AppNotification = {
+      id: `notif-${Date.now()}-par-revised`,
+      targetRole: 'parent',
+      title: `Con của bạn (${currentUser.name}) đã cập nhật bài viết!`,
+      message: `Con vừa chỉnh sửa và nộp lại bài review "${editingReview.title}".`,
+      timestamp: 'Vừa xong',
+      read: false,
+      type: 'review_submitted',
+      relatedReviewId: editingReview.id
+    };
+
+    setNotifications([reviseNotif, parentReviseNotif, ...notifications]);
 
     const bonus = 15;
     setPoints(p => p + bonus);
     const targetId = editingReview.id;
     setEditingReview(null);
-    showToast(`✨ Đã nộp lại bài sửa lên Firebase! +${bonus} điểm. Giáo viên đã nhận được bài cập nhật.`);
+    showToast(`✨ Đã nộp lại bài sửa lên Cloud! +${bonus} điểm. Giáo viên đã nhận được bài cập nhật.`);
 
     try {
       await updateReviewInFirestore(targetId, updatedRev);
       await createNotificationInFirestore(reviseNotif);
+      await createNotificationInFirestore(parentReviseNotif);
     } catch (err) {
       console.warn('Firebase update error:', err);
     }
   };
 
-  // Teacher Grades Review Handler
+  // Teacher Grades / Re-grades Review Handler (Supports Appeal / Phúc khảo)
   const handleTeacherGrade = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!gradingReview) return;
 
     const isPassed = gradeStatus === 'completed';
+    const isRegrade = gradingReview.score !== undefined || gradingReview.status === 'completed';
 
-    const updated = {
+    const updated: ReviewItem = {
       ...gradingReview,
       status: gradeStatus,
       score: isPassed ? Number(gradeScore) : undefined,
-      feedback: gradeFeedback.trim() || (isPassed ? 'Bài viết đạt yêu cầu, tư duy tốt!' : 'Em hãy đọc lại nhận xét và bổ sung chi tiết nhé.'),
+      feedback: gradeFeedback.trim() || (isPassed ? (isRegrade ? 'Đã chấm lại bài phúc khảo: Đạt tiêu chuẩn xuất sắc!' : 'Bài viết đạt yêu cầu, tư duy tốt!') : 'Em hãy đọc lại nhận xét và bổ sung chi tiết nhé.'),
       teacherName: currentUser.name,
       urgent: !isPassed
     };
@@ -320,8 +384,10 @@ export default function App() {
       id: `notif-grade-stud-${Date.now()}`,
       targetRole: 'student',
       targetUserId: gradingReview.studentId,
-      title: isPassed ? `Chúc mừng! Cô giáo đã chấm ${gradeScore} điểm ⭐` : `Yêu cầu chỉnh sửa bài viết ⚠️`,
-      message: `${currentUser.name} đã nhận xét bài "${gradingReview.title}": "${gradeFeedback || (isPassed ? 'Đạt chuẩn' : 'Cần sửa đổi')}"`,
+      title: isPassed
+        ? (isRegrade ? `Kết quả chấm lại / Phúc khảo: ${gradeScore}/10 ⭐` : `Chúc mừng! Cô giáo đã chấm ${gradeScore} điểm ⭐`)
+        : `Yêu cầu chỉnh sửa bài viết ⚠️`,
+      message: `${currentUser.name} đã ${isRegrade ? 'đánh giá lại' : 'nhận xét'} bài "${gradingReview.title}": "${gradeFeedback || (isPassed ? 'Đạt chuẩn' : 'Cần sửa đổi')}"`,
       timestamp: 'Vừa xong',
       read: false,
       type: isPassed ? 'review_graded' : 'revision_requested',
@@ -332,8 +398,10 @@ export default function App() {
     const parentNotif: AppNotification = {
       id: `notif-grade-par-${Date.now()}`,
       targetRole: 'parent',
-      title: isPassed ? `Kết quả bài học của con: ${gradeScore}/10 ⭐` : `Thông báo sửa bài học của con ⚠️`,
-      message: `Giáo viên ${currentUser.name} vừa đánh giá bài "${gradingReview.title}" của ${gradingReview.studentName}.`,
+      title: isPassed
+        ? (isRegrade ? `Kết quả chấm lại bài của con: ${gradeScore}/10 ⭐` : `Kết quả bài học của con: ${gradeScore}/10 ⭐`)
+        : `Thông báo sửa bài học của con ⚠️`,
+      message: `Giáo viên ${currentUser.name} vừa ${isRegrade ? 'chấm lại/đánh giá' : 'đánh giá'} bài "${gradingReview.title}" của ${gradingReview.studentName}.`,
       timestamp: 'Vừa xong',
       read: false,
       type: isPassed ? 'review_graded' : 'revision_requested',
@@ -344,7 +412,7 @@ export default function App() {
     const gradedId = gradingReview.id;
     setGradingReview(null);
     setGradeFeedback('');
-    showToast(`✅ Đã đồng bộ điểm & nhận xét lên Cloud! Học sinh & Ba mẹ thấy kết quả ngay.`);
+    showToast(`✅ Đã đồng bộ điểm ${isRegrade ? '(Chấm lại / Phúc khảo)' : ''} & nhận xét lên Cloud! Học sinh & Ba mẹ thấy kết quả ngay.`);
 
     try {
       await updateReviewInFirestore(gradedId, updated);
@@ -687,7 +755,18 @@ export default function App() {
           </div>
 
           {/* User Account / Role Switcher Pill */}
-          <div className="relative">
+          <div className="relative flex items-center gap-2">
+            {/* Quick Gmail Login Trigger Button */}
+            <button
+              id="btn-quick-gmail-login"
+              onClick={() => setShowAuthModal(true)}
+              className="hidden lg:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-xs transition cursor-pointer"
+              title="Đăng nhập tài khoản Gmail / Google để lưu bài viết vĩnh viễn"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>{currentUser.email ? 'Đổi Gmail' : 'Đăng nhập Gmail'}</span>
+            </button>
+
             <button
               id="btn-user-profile-menu"
               onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
@@ -706,9 +785,14 @@ export default function App() {
                 {currentUser.avatar}
               </div>
               <div className="text-left hidden sm:block">
-                <p className="text-sm font-extrabold text-slate-900 leading-tight truncate max-w-[130px]">
-                  {currentUser.name}
-                </p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm font-extrabold text-slate-900 leading-tight truncate max-w-[120px]">
+                    {currentUser.name}
+                  </p>
+                  {currentUser.email && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" title={`Đã liên kết ${currentUser.email}`} />
+                  )}
+                </div>
                 <p className="text-xs text-blue-600 font-bold leading-tight">
                   {currentUser.role === 'teacher' ? '👩‍🏫 Giáo viên' : currentUser.role === 'parent' ? '👨‍👩‍👧 Phụ huynh' : `🎓 ${currentUser.class}`}
                 </p>
@@ -720,22 +804,41 @@ export default function App() {
             {showRoleSwitcher && (
               <div
                 id="role-switcher-menu"
-                className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-slate-200 p-5 z-50 animate-in fade-in duration-150"
+                className="absolute right-0 mt-2 top-full w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-slate-200 p-5 z-50 animate-in fade-in duration-150"
               >
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
                   <div>
-                    <h4 className="font-extrabold text-slate-900 text-base">Chuyển đổi vai trò & Tài khoản</h4>
-                    <p className="text-xs text-slate-400">Chọn vai trò mẫu hoặc đăng nhập với tên của bạn</p>
+                    <h4 className="font-extrabold text-slate-900 text-base">Tài khoản & Vai trò</h4>
+                    <p className="text-xs text-slate-400">
+                      {currentUser.email ? `Đã đăng nhập: ${currentUser.email}` : 'Tự động lưu trạng thái đăng nhập'}
+                    </p>
                   </div>
                   <button onClick={() => setShowRoleSwitcher(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
+                {/* Primary Action: Google / Gmail login */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => {
+                      setShowRoleSwitcher(false);
+                      setShowAuthModal(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-2.5 px-4 rounded-2xl shadow-md shadow-blue-500/20 text-sm transition cursor-pointer"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>Đăng nhập Gmail / Google</span>
+                  </button>
+                  <p className="text-[11px] text-slate-400 text-center mt-1.5">
+                    Đăng nhập 1 lần, hệ thống tự nhớ tên và email cho các lần sau.
+                  </p>
+                </div>
+
                 {/* Preset accounts */}
                 <div className="flex flex-col gap-2 mb-4">
                   <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
-                    Tài khoản mẫu thử nghiệm:
+                    Hoặc chọn tài khoản mẫu trải nghiệm nhanh:
                   </span>
                   {PRESET_USERS.map(u => (
                     <button
@@ -770,7 +873,7 @@ export default function App() {
                 {/* Custom User Form */}
                 <form onSubmit={handleCustomLogin} className="pt-3 border-t border-slate-100 flex flex-col gap-3">
                   <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
-                    Hoặc đăng nhập với tên của bạn:
+                    Hoặc nhập tên riêng của bạn:
                   </span>
                   <input
                     type="text"
@@ -828,7 +931,7 @@ export default function App() {
                     type="submit"
                     className="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold py-2.5 rounded-xl transition cursor-pointer"
                   >
-                    Bắt đầu làm việc với tên này
+                    Bắt đầu sử dụng với tên này
                   </button>
                 </form>
               </div>
@@ -1241,12 +1344,12 @@ export default function App() {
                           </button>
 
                           <div className="flex items-center gap-2 ml-auto">
-                            {currentUser.role === 'student' && rev.status === 'needs_revision' && (
+                            {currentUser.role === 'student' && (
                               <button
                                 onClick={() => setEditingReview(rev)}
-                                className="bg-orange-600 text-white text-xs px-3 py-1.5 rounded-xl font-bold hover:bg-orange-700 transition flex items-center gap-1 cursor-pointer"
+                                className="bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs px-3 py-1.5 rounded-xl font-bold border border-orange-200 transition flex items-center gap-1 cursor-pointer"
                               >
-                                <Edit3 className="w-3.5 h-3.5" /> Sửa bài
+                                <Edit3 className="w-3.5 h-3.5" /> Sửa &amp; Nộp lại
                               </button>
                             )}
 
@@ -1260,7 +1363,8 @@ export default function App() {
                                 }}
                                 className="bg-purple-600 text-white text-xs px-3 py-1.5 rounded-xl font-bold hover:bg-purple-700 transition flex items-center gap-1 cursor-pointer"
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Chấm điểm
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>{rev.status === 'completed' ? 'Chấm lại bài' : 'Chấm điểm'}</span>
                               </button>
                             )}
 
@@ -1503,7 +1607,7 @@ export default function App() {
                             }}
                             className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition cursor-pointer"
                           >
-                            Chấm điểm
+                            {r.status === 'completed' ? 'Chấm lại bài' : 'Chấm điểm'}
                           </button>
                         )}
 
@@ -1516,12 +1620,13 @@ export default function App() {
                           </button>
                         )}
 
-                        {currentUser.role === 'student' && r.status === 'needs_revision' && (
+                        {currentUser.role === 'student' && (
                           <button
                             onClick={() => setEditingReview(r)}
-                            className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition cursor-pointer"
+                            className="bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold px-3 py-2 rounded-xl transition cursor-pointer flex items-center gap-1"
                           >
-                            Chỉnh sửa
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Sửa &amp; Nộp lại</span>
                           </button>
                         )}
                       </div>
@@ -1632,7 +1737,7 @@ export default function App() {
                         className="bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>CHẤM ĐIỂM / NHẬN XÉT</span>
+                        <span>{rev.status === 'completed' ? 'CHẤM LẠI BÀI (PHÚC KHẢO)' : 'CHẤM ĐIỂM / NHẬN XÉT'}</span>
                       </button>
                     </div>
                   </div>
@@ -2395,6 +2500,15 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* MODAL 5: GMAIL & ACCOUNT AUTH MODAL (AUTO-PERSIST ON DEVICE & CLOUD) */}
+      <AuthModal
+        isOpen={showAuthModal}
+        currentUser={currentUser}
+        onClose={() => setShowAuthModal(false)}
+        onSelectUser={handleSwitchUser}
+        onShowToast={showToast}
+      />
     </div>
   );
 }
