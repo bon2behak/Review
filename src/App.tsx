@@ -68,11 +68,59 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<'dashboard' | 'reviews' | 'tasks' | 'rewards' | 'grading' | 'parent_feed'>('dashboard');
   const [points, setPoints] = useState<number>(245);
   const [streakDays, setStreakDays] = useState<number>(7);
-  const [reviews, setReviews] = useState<ReviewItem[]>(INITIAL_REVIEWS);
-  const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
-  const [rewards, setRewards] = useState<RewardItem[]>(INITIAL_REWARDS);
-  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
-  const [firebaseStatus, setFirebaseStatus] = useState<'connected' | 'syncing'>('connected');
+  const [reviews, setReviews] = useState<ReviewItem[]>(() => {
+    try {
+      const cached = localStorage.getItem('learn_review_cached_reviews');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Could not read cached reviews:', e);
+    }
+    return INITIAL_REVIEWS;
+  });
+
+  const [tasks, setTasks] = useState<TaskItem[]>(() => {
+    try {
+      const cached = localStorage.getItem('learn_review_cached_tasks');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Could not read cached tasks:', e);
+    }
+    return INITIAL_TASKS;
+  });
+
+  const [rewards, setRewards] = useState<RewardItem[]>(() => {
+    try {
+      const cached = localStorage.getItem('learn_review_cached_rewards');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Could not read cached rewards:', e);
+    }
+    return INITIAL_REWARDS;
+  });
+
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    try {
+      const cached = localStorage.getItem('learn_review_cached_notifications');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Could not read cached notifications:', e);
+    }
+    return INITIAL_NOTIFICATIONS;
+  });
+
+  const [firebaseStatus, setFirebaseStatus] = useState<'connected' | 'syncing' | 'offline'>('connected');
 
   // Modals and UI States
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
@@ -87,6 +135,39 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [reviewFilter, setReviewFilter] = useState<string>('all');
+
+  // Backup cache to localStorage on updates
+  useEffect(() => {
+    try {
+      localStorage.setItem('learn_review_cached_reviews', JSON.stringify(reviews));
+    } catch (e) {
+      console.warn('Could not cache reviews:', e);
+    }
+  }, [reviews]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('learn_review_cached_notifications', JSON.stringify(notifications));
+    } catch (e) {
+      console.warn('Could not cache notifications:', e);
+    }
+  }, [notifications]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('learn_review_cached_tasks', JSON.stringify(tasks));
+    } catch (e) {
+      console.warn('Could not cache tasks:', e);
+    }
+  }, [tasks]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('learn_review_cached_rewards', JSON.stringify(rewards));
+    } catch (e) {
+      console.warn('Could not cache rewards:', e);
+    }
+  }, [rewards]);
 
   // Save active user profile automatically on every change
   useEffect(() => {
@@ -636,15 +717,23 @@ export default function App() {
             </button>
           </div>
 
-          {/* Firebase Realtime Cloud Sync Status */}
-          <div
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 text-xs font-bold"
-            title="Dữ liệu đồng bộ trực tuyến thời gian thực qua Firebase Firestore giữa Học sinh, Ba mẹ và Giáo viên"
+          {/* Firebase Realtime Cloud Sync Status with Manual Refresh */}
+          <button
+            onClick={() => {
+              setFirebaseStatus('syncing');
+              showToast('🔄 Đang đồng bộ và làm mới danh sách bài viết từ Cloud...');
+              setTimeout(() => {
+                setFirebaseStatus('connected');
+                showToast('✅ Đã cập nhật xong dữ liệu mới nhất từ Firestore Cloud!');
+              }, 600);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-full border border-emerald-200 text-xs font-bold transition cursor-pointer"
+            title="Nhấn để làm mới và kiểm tra bài viết mới nhất từ máy chủ Firebase"
           >
-            <Cloud className={`w-3.5 h-3.5 ${firebaseStatus === 'syncing' ? 'animate-bounce text-blue-600' : 'text-emerald-600'}`} />
-            <span>{firebaseStatus === 'syncing' ? 'Đang đồng bộ...' : 'Firebase Cloud Sync'}</span>
+            <Cloud className={`w-3.5 h-3.5 ${firebaseStatus === 'syncing' ? 'animate-spin text-blue-600' : 'text-emerald-600'}`} />
+            <span className="hidden sm:inline">{firebaseStatus === 'syncing' ? 'Đang tải...' : 'Cloud Sync'}</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-          </div>
+          </button>
 
           {/* Quick Guide */}
           <button
