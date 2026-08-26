@@ -1,21 +1,10 @@
 import { initializeApp } from 'firebase/app';
 import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-  type User as FirebaseUser
-} from 'firebase/auth';
-
-export { onAuthStateChanged, type FirebaseUser };
-import {
   getFirestore,
   collection,
   doc,
   setDoc,
   updateDoc,
-  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -24,15 +13,11 @@ import {
   type Unsubscribe
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { ReviewItem, AppNotification, TaskItem, RewardItem, UserProfile } from './types';
+import { ReviewItem, AppNotification, TaskItem, RewardItem } from './types';
 import { INITIAL_REVIEWS, INITIAL_NOTIFICATIONS, INITIAL_TASKS, INITIAL_REWARDS } from './data';
 
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
-
-// Initialize Auth
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Firestore with configured custom database ID or default
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
@@ -42,76 +27,6 @@ export const reviewsCollection = collection(db, 'reviews');
 export const notificationsCollection = collection(db, 'notifications');
 export const tasksCollection = collection(db, 'tasks');
 export const rewardsCollection = collection(db, 'rewards');
-export const usersCollection = collection(db, 'users');
-
-/**
- * Handle Firestore Error with fallback details
- */
-export function handleFirestoreError(error: unknown, operation: string, path: string | null): void {
-  const isOffline = error instanceof Error && (
-    error.message.includes('unavailable') ||
-    error.message.includes('offline') ||
-    error.message.includes('network')
-  );
-  if (isOffline) {
-    console.info(`Firestore is operating in offline mode for [${operation}] on path [${path}]. Local cache will be used.`);
-  } else {
-    console.warn(`Firestore [${operation}] error on [${path}]:`, error);
-  }
-}
-
-/**
- * Sign in with Google Popup
- */
-export async function signInWithGoogle(): Promise<FirebaseUser | null> {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
-  } catch (error) {
-    console.warn('Google sign-in popup error (or iframe constraint):', error);
-    throw error;
-  }
-}
-
-/**
- * Sign out
- */
-export async function logOutFromFirebase(): Promise<void> {
-  try {
-    await firebaseSignOut(auth);
-  } catch (error) {
-    console.warn('Sign out error:', error);
-  }
-}
-
-/**
- * Save or update user profile in Firestore
- */
-export async function saveUserProfileToFirestore(profile: UserProfile): Promise<void> {
-  try {
-    await setDoc(doc(db, 'users', profile.id), {
-      ...profile,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-  } catch (error) {
-    handleFirestoreError(error, 'saveUserProfile', `users/${profile.id}`);
-  }
-}
-
-/**
- * Get user profile from Firestore
- */
-export async function getUserProfileFromFirestore(userId: string): Promise<UserProfile | null> {
-  try {
-    const snap = await getDoc(doc(db, 'users', userId));
-    if (snap.exists()) {
-      return snap.data() as UserProfile;
-    }
-  } catch (error) {
-    handleFirestoreError(error, 'getUserProfile', `users/${userId}`);
-  }
-  return null;
-}
 
 /**
  * Initialize Firestore data if empty with preset educational reviews & demo records
@@ -153,7 +68,7 @@ export async function seedInitialDataIfEmpty(): Promise<void> {
       }
     }
   } catch (error) {
-    handleFirestoreError(error, 'seedInitialData', 'all');
+    console.warn('Could not seed initial data to Firestore (will use local fallback):', error);
   }
 }
 
@@ -171,20 +86,13 @@ export function subscribeToReviews(onUpdate: (reviews: ReviewItem[]) => void): U
           const data = docSnap.data() as ReviewItem;
           list.push({ ...data, id: docSnap.id });
         });
-        // Sort newest first: prioritize timestamp in ID (e.g. rev-177...) or createdAt
-        list.sort((a, b) => {
-          const timeA = a.id.startsWith('rev-') ? parseInt(a.id.replace('rev-', ''), 10) : 0;
-          const timeB = b.id.startsWith('rev-') ? parseInt(b.id.replace('rev-', ''), 10) : 0;
-          if (!isNaN(timeA) && !isNaN(timeB) && timeA > 1000000000 && timeB > 1000000000) {
-            return timeB - timeA;
-          }
-          return b.id.localeCompare(a.id);
-        });
+        // Sort newest first by submittedAt / id
+        list.sort((a, b) => b.id.localeCompare(a.id));
         onUpdate(list);
       }
     },
     error => {
-      handleFirestoreError(error, 'subscribeReviews', 'reviews');
+      console.warn('Firestore reviews snapshot error:', error);
     }
   );
 }
@@ -208,7 +116,7 @@ export function subscribeToNotifications(onUpdate: (notifs: AppNotification[]) =
       }
     },
     error => {
-      handleFirestoreError(error, 'subscribeNotifications', 'notifications');
+      console.warn('Firestore notifications snapshot error:', error);
     }
   );
 }
@@ -229,7 +137,7 @@ export function subscribeToTasks(onUpdate: (tasks: TaskItem[]) => void): Unsubsc
       }
     },
     error => {
-      handleFirestoreError(error, 'subscribeTasks', 'tasks');
+      console.warn('Firestore tasks snapshot error:', error);
     }
   );
 }
@@ -250,7 +158,7 @@ export function subscribeToRewards(onUpdate: (rewards: RewardItem[]) => void): U
       }
     },
     error => {
-      handleFirestoreError(error, 'subscribeRewards', 'rewards');
+      console.warn('Firestore rewards snapshot error:', error);
     }
   );
 }
@@ -259,53 +167,37 @@ export function subscribeToRewards(onUpdate: (rewards: RewardItem[]) => void): U
  * Save new review to Firestore (Realtime syncs to all users)
  */
 export async function createReviewInFirestore(review: ReviewItem): Promise<void> {
-  try {
-    await setDoc(doc(db, 'reviews', review.id), {
-      ...review,
-      createdAt: serverTimestamp()
-    });
-  } catch (error) {
-    handleFirestoreError(error, 'createReview', `reviews/${review.id}`);
-  }
+  await setDoc(doc(db, 'reviews', review.id), {
+    ...review,
+    createdAt: serverTimestamp()
+  });
 }
 
 /**
  * Update review in Firestore (Teacher grade, student revision, parent comment)
  */
 export async function updateReviewInFirestore(reviewId: string, updates: Partial<ReviewItem>): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'reviews', reviewId), {
-      ...updates,
-      updatedAt: serverTimestamp()
-    });
-  } catch (error) {
-    handleFirestoreError(error, 'updateReview', `reviews/${reviewId}`);
-  }
+  await updateDoc(doc(db, 'reviews', reviewId), {
+    ...updates,
+    updatedAt: serverTimestamp()
+  });
 }
 
 /**
  * Create notification in Firestore
  */
 export async function createNotificationInFirestore(notif: AppNotification): Promise<void> {
-  try {
-    await setDoc(doc(db, 'notifications', notif.id), {
-      ...notif,
-      createdAt: serverTimestamp()
-    });
-  } catch (error) {
-    handleFirestoreError(error, 'createNotification', `notifications/${notif.id}`);
-  }
+  await setDoc(doc(db, 'notifications', notif.id), {
+    ...notif,
+    createdAt: serverTimestamp()
+  });
 }
 
 /**
  * Mark notification as read
  */
 export async function markNotificationReadInFirestore(notifId: string): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'notifications', notifId), {
-      read: true
-    });
-  } catch (error) {
-    handleFirestoreError(error, 'markNotificationRead', `notifications/${notifId}`);
-  }
+  await updateDoc(doc(db, 'notifications', notifId), {
+    read: true
+  });
 }
