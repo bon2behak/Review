@@ -532,13 +532,13 @@ export default function App() {
 
   const pendingGradingCount = reviews.filter(r => r.status === 'reviewing').length;
 
-  // Dynamic font sizing classes
+  // Dynamic font sizing classes with comfortable typography
   const fontScaleClass =
     appFontSize === 'xlarge'
-      ? 'text-lg [&_h1]:text-4xl [&_h2]:text-3xl [&_h3]:text-2xl [&_p]:text-base [&_.text-xs]:text-sm [&_.text-sm]:text-base'
+      ? 'text-lg sm:text-xl [&_h1]:text-4xl [&_h2]:text-3xl [&_h3]:text-2xl [&_p]:text-lg [&_.text-xs]:text-sm [&_.text-sm]:text-base [&_textarea]:text-lg [&_input]:text-base'
       : appFontSize === 'large'
-      ? 'text-base [&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_p]:text-base [&_.text-xs]:text-sm [&_.text-sm]:text-base'
-      : '';
+      ? 'text-base sm:text-lg [&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_p]:text-base [&_.text-xs]:text-sm [&_.text-sm]:text-base [&_textarea]:text-base [&_input]:text-base'
+      : 'text-[15px] sm:text-base [&_h1]:text-2xl sm:[&_h1]:text-3xl [&_h2]:text-xl sm:[&_h2]:text-2xl [&_h3]:text-lg sm:[&_h3]:text-xl';
 
   return (
     <div id="app-root" className={`min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col antialiased ${fontScaleClass}`}>
@@ -1267,32 +1267,32 @@ export default function App() {
 
                         {/* Title & Subject */}
                         <div>
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-lg">
                               {rev.subject}
                             </span>
-                            <span className="text-xs text-slate-500 font-medium">• {rev.chapter}</span>
+                            <span className="text-xs sm:text-sm text-slate-500 font-medium">• {rev.chapter}</span>
                           </div>
                           <h4
                             onClick={() => handleOpenReviewReader(rev)}
-                            className="text-base sm:text-lg font-bold text-slate-900 hover:text-blue-600 transition cursor-pointer"
+                            className="text-lg sm:text-xl font-extrabold text-slate-900 hover:text-blue-600 transition cursor-pointer leading-snug"
                           >
                             {rev.title}
                           </h4>
-                          <p className="text-sm text-slate-700 mt-2 line-clamp-3 italic bg-white/80 p-3.5 rounded-2xl border border-slate-200/60 leading-relaxed">
+                          <p className="text-base sm:text-[17px] text-slate-800 mt-2.5 line-clamp-3 italic bg-white/90 p-4 rounded-2xl border border-slate-200/80 leading-relaxed font-normal">
                             &ldquo;{rev.myText}&rdquo;
                           </p>
                         </div>
 
                         {/* Teacher Feedback pill */}
                         {rev.feedback && (
-                          <div className="p-3 bg-white rounded-2xl border border-slate-200 flex items-start gap-2.5">
-                            <span className="text-base">👩‍🏫</span>
+                          <div className="p-3.5 bg-white rounded-2xl border border-slate-200 flex items-start gap-3">
+                            <span className="text-lg">👩‍🏫</span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-slate-800">
+                              <p className="text-xs sm:text-sm font-bold text-slate-900">
                                 {rev.teacherName || 'Giáo viên bộ môn'}:
                               </p>
-                              <p className="text-xs sm:text-sm text-slate-600 italic leading-snug">{rev.feedback}</p>
+                              <p className="text-sm sm:text-base text-slate-700 italic leading-relaxed">{rev.feedback}</p>
                             </div>
                           </div>
                         )}
@@ -1510,27 +1510,27 @@ export default function App() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 mb-1.5">
+                      <div className="flex items-center gap-2 mb-2">
                         <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-0.5 rounded-lg">
                           {r.subject}
                         </span>
-                        <span className="text-xs text-slate-500 font-medium">{r.chapter}</span>
+                        <span className="text-xs sm:text-sm text-slate-500 font-medium">{r.chapter}</span>
                       </div>
 
                       <h3
                         onClick={() => handleOpenReviewReader(r)}
-                        className="text-lg font-bold text-slate-900 leading-snug hover:text-blue-600 transition cursor-pointer"
+                        className="text-lg sm:text-xl font-bold text-slate-900 leading-snug hover:text-blue-600 transition cursor-pointer"
                       >
                         {r.title}
                       </h3>
 
                       {/* Text Snippet with View More button */}
-                      <div className="mt-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <p className="text-sm text-slate-700 font-normal leading-relaxed line-clamp-3">
+                      <div className="mt-3.5 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+                        <p className="text-base sm:text-[17px] text-slate-800 font-normal leading-relaxed line-clamp-3">
                           &ldquo;{r.myText}&rdquo;
                         </p>
                         {r.reflection && (
-                          <p className="text-xs sm:text-sm text-indigo-800 mt-2.5 font-medium pt-2 border-t border-slate-200/60">
+                          <p className="text-sm sm:text-base text-indigo-900 mt-3 font-medium pt-2.5 border-t border-slate-200/60 leading-relaxed">
                             💡 <strong>Cảm nhận:</strong> {r.reflection}
                           </p>
                         )}
@@ -1538,13 +1538,13 @@ export default function App() {
 
                       {/* Teacher Feedback */}
                       {r.feedback && (
-                        <div className="mt-3 p-3 bg-blue-50/60 rounded-2xl border border-blue-100 flex items-start gap-2.5">
-                          <span className="text-sm">👩‍🏫</span>
+                        <div className="mt-3.5 p-3.5 bg-blue-50/70 rounded-2xl border border-blue-100 flex items-start gap-3">
+                          <span className="text-base">👩‍🏫</span>
                           <div>
-                            <p className="text-xs font-bold text-blue-950">
+                            <p className="text-xs sm:text-sm font-bold text-blue-950">
                               {r.teacherName || 'Giáo viên hướng dẫn'}:
                             </p>
-                            <p className="text-xs sm:text-sm text-slate-700 italic">&ldquo;{r.feedback}&rdquo;</p>
+                            <p className="text-sm sm:text-base text-slate-800 italic leading-relaxed">&ldquo;{r.feedback}&rdquo;</p>
                           </div>
                         </div>
                       )}
@@ -1661,7 +1661,7 @@ export default function App() {
 
                       <h4
                         onClick={() => handleOpenReviewReader(rev)}
-                        className="text-lg font-bold text-slate-900 mt-2 hover:text-purple-700 transition cursor-pointer"
+                        className="text-lg sm:text-xl font-bold text-slate-900 mt-2 hover:text-purple-700 transition cursor-pointer leading-snug"
                       >
                         <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg mr-2">
                           {rev.subject}
@@ -1669,12 +1669,12 @@ export default function App() {
                         {rev.title}
                       </h4>
 
-                      <p className="text-sm text-slate-700 mt-2 bg-slate-50 p-4 rounded-2xl border border-slate-100 leading-relaxed line-clamp-3">
+                      <p className="text-base sm:text-[17px] text-slate-800 mt-2.5 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 leading-relaxed line-clamp-3 font-normal">
                         &ldquo;{rev.myText}&rdquo;
                       </p>
 
                       {rev.feedback && (
-                        <p className="text-xs sm:text-sm text-purple-900 mt-2.5 font-medium bg-purple-50 p-3 rounded-2xl border border-purple-100">
+                        <p className="text-sm sm:text-base text-purple-950 mt-3 font-medium bg-purple-50 p-3.5 rounded-2xl border border-purple-100 leading-relaxed">
                           💬 <strong>Nhận xét hiện tại của cô:</strong> {rev.feedback}
                         </p>
                       )}
@@ -1784,19 +1784,19 @@ export default function App() {
                     </div>
 
                     {/* Child's written text */}
-                    <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-100">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <p className="text-xs font-bold text-slate-700">✍️ Bài viết của con:</p>
+                    <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs sm:text-sm font-bold text-slate-700">✍️ Bài viết của con:</p>
                         <button
                           onClick={() => handleOpenReviewReader(rev)}
-                          className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+                          className="text-xs sm:text-sm font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
                         >
-                          <BookOpen className="w-3.5 h-3.5" /> Xem toàn bộ bài dài
+                          <BookOpen className="w-4 h-4" /> Xem toàn bộ bài dài
                         </button>
                       </div>
-                      <p className="text-sm text-slate-800 italic leading-relaxed line-clamp-3">&ldquo;{rev.myText}&rdquo;</p>
+                      <p className="text-base sm:text-[17px] text-slate-900 italic leading-relaxed line-clamp-3 font-normal">&ldquo;{rev.myText}&rdquo;</p>
                       {rev.reflection && (
-                        <p className="text-xs sm:text-sm text-indigo-800 mt-2.5 font-medium pt-2 border-t border-slate-200/60">
+                        <p className="text-sm sm:text-base text-indigo-900 mt-3 font-medium pt-2.5 border-t border-slate-200/60 leading-relaxed">
                           💡 <strong>Bài học con rút ra:</strong> {rev.reflection}
                         </p>
                       )}
@@ -1804,13 +1804,13 @@ export default function App() {
 
                     {/* Teacher feedback to parent */}
                     {rev.feedback && (
-                      <div className="p-4 bg-purple-50/70 rounded-2xl border border-purple-100 flex items-start gap-3">
-                        <span className="text-lg">👩‍🏫</span>
+                      <div className="p-4 sm:p-5 bg-purple-50/70 rounded-2xl border border-purple-100 flex items-start gap-3">
+                        <span className="text-xl">👩‍🏫</span>
                         <div>
-                          <p className="text-xs font-bold text-purple-950">
+                          <p className="text-xs sm:text-sm font-bold text-purple-950">
                             Nhận xét từ giáo viên ({rev.teacherName || 'Cô giáo'}):
                           </p>
-                          <p className="text-sm text-purple-800 mt-0.5">&ldquo;{rev.feedback}&rdquo;</p>
+                          <p className="text-sm sm:text-base text-purple-900 mt-1 italic leading-relaxed">&ldquo;{rev.feedback}&rdquo;</p>
                         </div>
                       </div>
                     )}
@@ -2108,20 +2108,20 @@ export default function App() {
                     e.preventDefault();
                     showToast('⚠️ Menu chuột phải đã tắt: Em hãy sử dụng bàn phím để tự gõ bài văn nhé!');
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 leading-relaxed font-normal select-text"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-base sm:text-lg focus:outline-none focus:border-blue-500 leading-relaxed font-normal select-text"
                   required
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <label className="text-xs sm:text-sm font-bold text-slate-700 flex items-center gap-1.5">
                     <span>Cảm nghĩ hoặc bài học tâm đắc nhất của em</span>
                     <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                       Khóa Paste 🚫
                     </span>
                   </label>
-                  <span className="text-[11px] font-semibold text-slate-500">
+                  <span className="text-xs font-semibold text-slate-500">
                     {newReflection.length} ký tự
                   </span>
                 </div>
@@ -2142,7 +2142,7 @@ export default function App() {
                     e.preventDefault();
                     showToast('⚠️ Vui lòng tự đánh máy nội dung bài học!');
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 select-text"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-base sm:text-lg focus:outline-none focus:border-blue-500 select-text leading-relaxed"
                 />
               </div>
 
@@ -2224,13 +2224,13 @@ export default function App() {
                     e.preventDefault();
                     showToast('⚠️ Em hãy tự gõ chữ vào bài sửa nhé!');
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 leading-relaxed font-normal select-text"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-base sm:text-lg focus:outline-none focus:border-blue-500 leading-relaxed font-normal select-text"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Phần cảm nhận cá nhân bổ sung</label>
+                <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">Phần cảm nhận cá nhân bổ sung</label>
                 <textarea
                   rows={3}
                   value={editingReview.reflection || ''}
@@ -2243,7 +2243,7 @@ export default function App() {
                     e.preventDefault();
                     showToast('⚠️ Em hãy tự gõ cảm nhận của mình nhé!');
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 select-text"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-base sm:text-lg focus:outline-none focus:border-blue-500 select-text leading-relaxed"
                 />
               </div>
 
@@ -2277,8 +2277,8 @@ export default function App() {
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
                 <span className="text-xs font-bold text-purple-700 uppercase">Góc Giáo Viên Chấm Bài</span>
-                <h3 className="text-xl font-black text-slate-900 mt-0.5">{gradingReview.title}</h3>
-                <p className="text-xs text-slate-500">
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">{gradingReview.title}</h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                   Học sinh: <strong>{gradingReview.studentName}</strong> ({gradingReview.studentClass})
                 </p>
               </div>
@@ -2291,11 +2291,11 @@ export default function App() {
             </div>
 
             {/* Student's text */}
-            <div className="mt-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 max-h-52 overflow-y-auto">
-              <p className="text-xs font-bold text-slate-700 mb-1.5">📖 Bài làm chi tiết của học sinh:</p>
-              <p className="text-sm text-slate-800 leading-relaxed italic whitespace-pre-line">&ldquo;{gradingReview.myText}&rdquo;</p>
+            <div className="mt-4 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 max-h-60 overflow-y-auto">
+              <p className="text-xs sm:text-sm font-bold text-slate-700 mb-2">📖 Bài làm chi tiết của học sinh:</p>
+              <p className="text-base sm:text-[17px] text-slate-900 leading-relaxed italic whitespace-pre-line font-normal">&ldquo;{gradingReview.myText}&rdquo;</p>
               {gradingReview.reflection && (
-                <p className="text-sm text-indigo-800 mt-3 pt-2 border-t border-slate-200">
+                <p className="text-sm sm:text-base text-indigo-900 mt-3 pt-2.5 border-t border-slate-200 leading-relaxed">
                   💡 <strong>Cảm nhận:</strong> {gradingReview.reflection}
                 </p>
               )}
@@ -2304,11 +2304,11 @@ export default function App() {
             <form onSubmit={handleTeacherGrade} className="mt-4 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Kết quả đánh giá</label>
+                  <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">Kết quả đánh giá</label>
                   <select
                     value={gradeStatus}
                     onChange={e => setGradeStatus(e.target.value as any)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none font-bold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm sm:text-base focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none font-bold"
                   >
                     <option value="completed">⭐ Đạt chuẩn (Cho điểm)</option>
                     <option value="needs_revision">⚠️ Yêu cầu học sinh viết lại</option>
@@ -2317,7 +2317,7 @@ export default function App() {
 
                 {gradeStatus === 'completed' && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Điểm số (Thang điểm 10)</label>
+                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">Điểm số (Thang điểm 10)</label>
                     <input
                       type="number"
                       step="0.5"
@@ -2325,7 +2325,7 @@ export default function App() {
                       max="10"
                       value={gradeScore}
                       onChange={e => setGradeScore(Number(e.target.value))}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-purple-500 font-black"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm sm:text-base focus:outline-none focus:border-purple-500 font-black"
                       required
                     />
                   </div>
@@ -2333,15 +2333,15 @@ export default function App() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Lời nhận xét & Hướng dẫn của cô giáo
+                <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">
+                  Lời nhận xét &amp; Hướng dẫn của cô giáo
                 </label>
                 <textarea
                   rows={3}
                   placeholder="Ghi nhận xét chi tiết để học sinh và ba mẹ cùng nắm bắt..."
                   value={gradeFeedback}
                   onChange={e => setGradeFeedback(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-purple-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-base focus:outline-none focus:border-purple-500 leading-relaxed"
                   required
                 />
               </div>

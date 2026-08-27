@@ -40,7 +40,7 @@ export const ReviewReaderModal: React.FC<ReviewReaderModalProps> = ({
   onEdit,
   onShowToast
 }) => {
-  const [fontSize, setFontSize] = useState<number>(18); // default 18px (Comfortable Large)
+  const [fontSize, setFontSize] = useState<number>(20); // Default 20px (Comfortable, large, easy-to-read)
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [parentComment, setParentComment] = useState<string>('');
   const [selectedQuickReaction, setSelectedQuickReaction] = useState<string>('❤️ Rất tự hào về con!');
@@ -139,22 +139,22 @@ export const ReviewReaderModal: React.FC<ReviewReaderModalProps> = ({
           {/* READER TOOLBAR: FONT SIZE & AUDIO */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* Font Size Adjuster */}
-            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2 py-1 shadow-2xs gap-1">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-2xs gap-1.5">
               <span className="text-xs font-bold text-slate-500 px-1 flex items-center gap-1">
-                <Type className="w-3.5 h-3.5 text-blue-600" /> Cỡ chữ:
+                <Type className="w-4 h-4 text-blue-600" /> Cỡ chữ:
               </span>
               <button
-                onClick={() => setFontSize(prev => Math.max(14, prev - 2))}
+                onClick={() => setFontSize(prev => Math.max(16, prev - 2))}
                 title="Giảm cỡ chữ (A-)"
-                className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-700 transition"
+                className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-700 transition cursor-pointer"
               >
                 A-
               </button>
-              <span className="text-xs font-bold text-blue-700 min-w-8 text-center">{fontSize}px</span>
+              <span className="text-xs sm:text-sm font-extrabold text-blue-700 min-w-9 text-center">{fontSize}px</span>
               <button
-                onClick={() => setFontSize(prev => Math.min(26, prev + 2))}
+                onClick={() => setFontSize(prev => Math.min(32, prev + 2))}
                 title="Tăng cỡ chữ (A+)"
-                className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-sm font-black text-slate-900 transition"
+                className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-sm font-black text-slate-900 transition cursor-pointer"
               >
                 A+
               </button>
@@ -278,8 +278,8 @@ export const ReviewReaderModal: React.FC<ReviewReaderModalProps> = ({
             </div>
 
             <div
-              className="text-slate-800 font-normal leading-relaxed whitespace-pre-line tracking-normal"
-              style={{ fontSize: `${fontSize}px`, lineHeight: 1.75 }}
+              className="text-slate-900 font-normal leading-relaxed whitespace-pre-line tracking-normal"
+              style={{ fontSize: `${fontSize}px`, lineHeight: 1.8 }}
             >
               {review.myText}
             </div>
@@ -288,15 +288,15 @@ export const ReviewReaderModal: React.FC<ReviewReaderModalProps> = ({
           {/* PERSONAL REFLECTION & LESSON LEARNED (CẢM NHẬN RÚT RA) */}
           {review.reflection && (
             <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-3xl p-6 sm:p-7 border border-indigo-100 shadow-xs">
-              <div className="flex items-center gap-2.5 mb-2.5">
-                <span className="text-xl">💡</span>
-                <h4 className="text-base font-bold text-indigo-950">
-                  Cảm nhận cá nhân & Bài học tâm đắc rút ra:
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="text-2xl">💡</span>
+                <h4 className="text-base sm:text-lg font-extrabold text-indigo-950">
+                  Cảm nhận cá nhân &amp; Bài học tâm đắc rút ra:
                 </h4>
               </div>
               <p
-                className="text-indigo-900 font-medium leading-relaxed italic pl-3 border-l-4 border-indigo-400"
-                style={{ fontSize: `${Math.max(15, fontSize - 1)}px`, lineHeight: 1.65 }}
+                className="text-indigo-950 font-medium leading-relaxed italic pl-4 border-l-4 border-indigo-500"
+                style={{ fontSize: `${Math.max(16, fontSize - 2)}px`, lineHeight: 1.7 }}
               >
                 &ldquo;{review.reflection}&rdquo;
               </p>
@@ -304,31 +304,31 @@ export const ReviewReaderModal: React.FC<ReviewReaderModalProps> = ({
           )}
 
           {/* TEACHER'S EVALUATION & FEEDBACK */}
-          <div className="bg-purple-50/60 rounded-3xl p-6 border border-purple-200/80 shadow-xs">
-            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold">
+          <div className="bg-purple-50/70 rounded-3xl p-6 sm:p-7 border border-purple-200/80 shadow-xs">
+            <div className="flex items-center justify-between mb-3.5 flex-wrap gap-2">
+              <div className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center text-base font-bold shadow-xs">
                   👩‍🏫
                 </span>
                 <div>
-                  <h4 className="text-sm font-bold text-purple-950">
+                  <h4 className="text-base font-bold text-purple-950">
                     Đánh giá từ {review.teacherName || 'Giáo viên bộ môn'}
                   </h4>
-                  <p className="text-[11px] text-purple-600">Phản hồi chính thức trên hệ thống</p>
+                  <p className="text-xs text-purple-600 font-medium">Phản hồi chính thức trên hệ thống</p>
                 </div>
               </div>
 
               {review.score !== undefined && (
-                <div className="bg-white px-3 py-1.5 rounded-xl border border-purple-200 text-purple-900 font-black text-sm flex items-center gap-1.5 shadow-2xs">
+                <div className="bg-white px-4 py-2 rounded-xl border border-purple-200 text-purple-900 font-black text-sm sm:text-base flex items-center gap-1.5 shadow-2xs">
                   <span>Điểm số:</span>
-                  <span className="text-purple-700 text-base">{review.score}/10 ⭐</span>
+                  <span className="text-purple-700 text-lg font-black">{review.score}/10 ⭐</span>
                 </div>
               )}
             </div>
 
             <p
-              className="text-purple-900 bg-white/80 p-4 rounded-2xl border border-purple-100 italic leading-relaxed"
-              style={{ fontSize: `${Math.max(14, fontSize - 2)}px` }}
+              className="text-purple-950 bg-white p-4 sm:p-5 rounded-2xl border border-purple-100 italic leading-relaxed"
+              style={{ fontSize: `${Math.max(15, fontSize - 3)}px`, lineHeight: 1.7 }}
             >
               &ldquo;{review.feedback || 'Bài viết đang chờ thầy cô xem xét và phản hồi.'}&rdquo;
             </p>
@@ -341,42 +341,42 @@ export const ReviewReaderModal: React.FC<ReviewReaderModalProps> = ({
                     onClose();
                     onGrade(review);
                   }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  className="bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4" /> Chấm điểm & Viết lại nhận xét
+                  <CheckCircle2 className="w-4 h-4" /> Chấm điểm &amp; Viết lại nhận xét
                 </button>
               </div>
             )}
           </div>
 
           {/* PARENT INTERACTION & CHEERING SECTION */}
-          <div className="bg-rose-50/60 rounded-3xl p-6 border border-rose-200/80 shadow-xs">
-            <div className="flex items-center gap-2.5 mb-3">
-              <span className="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center text-sm font-bold">
+          <div className="bg-rose-50/70 rounded-3xl p-6 sm:p-7 border border-rose-200/80 shadow-xs">
+            <div className="flex items-center gap-3 mb-3.5">
+              <span className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center text-base font-bold shadow-xs">
                 👨‍👩‍👧
               </span>
               <div>
-                <h4 className="text-sm font-bold text-rose-950">Góc Phụ Huynh Đồng Hành</h4>
-                <p className="text-[11px] text-rose-600">Lời chúc & Động viên từ Ba Mẹ</p>
+                <h4 className="text-base font-bold text-rose-950">Góc Phụ Huynh Đồng Hành</h4>
+                <p className="text-xs text-rose-600 font-medium">Lời chúc &amp; Động viên từ Ba Mẹ</p>
               </div>
             </div>
 
             {review.parentReaction ? (
-              <div className="bg-white p-4 rounded-2xl border border-rose-100 mb-3 flex items-start justify-between gap-3">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-rose-100 mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-extrabold text-rose-900 flex items-center gap-1.5">
+                  <p className="text-sm font-black text-rose-900 flex items-center gap-1.5">
                     <span>{review.parentReaction}</span>
                   </p>
                   {review.parentComment && (
                     <p
-                      className="text-slate-700 italic mt-1.5"
-                      style={{ fontSize: `${Math.max(14, fontSize - 2)}px` }}
+                      className="text-slate-800 italic mt-2 leading-relaxed"
+                      style={{ fontSize: `${Math.max(15, fontSize - 3)}px`, lineHeight: 1.7 }}
                     >
                       &ldquo;{review.parentComment}&rdquo;
                     </p>
                   )}
                 </div>
-                <span className="text-[10px] text-rose-500 font-bold px-2 py-0.5 rounded bg-rose-50 shrink-0">
+                <span className="text-xs text-rose-500 font-bold px-2.5 py-1 rounded-lg bg-rose-50 shrink-0">
                   Đã ghi nhận
                 </span>
               </div>
